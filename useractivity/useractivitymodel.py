@@ -69,6 +69,7 @@ def load_dataset_pressure_left(path, y):
     for name in listdir(left_directory):
         filename = left_directory + '/' + name;
         df = pd.read_csv(filename, header=0, names=['time', 'PL1', 'PL2', 'PL3', 'PL4', 'PL5', 'PL6', 'PL7', 'PL8']);
+        df = df.fillna(0)
         df['time'] = pd.to_datetime(df['time'], unit='ms')
         df['activity'] = y
         data.append(df)
@@ -273,7 +274,6 @@ def synchronize_data(dataset):
             temp.set_index(['minsec']);
             datalist = pd.merge(left=datalist, right=temp, left_on='minsec', right_on='minsec');
 
-
         datalist['activity'] = activity
         datalist['PL'] = datalist[['PL1', 'PL2', 'PL3', 'PL4', 'PL5', 'PL6', 'PL7', 'PL8']].replace(0, np.NaN).mean(
             axis=1, skipna=True);
@@ -286,6 +286,7 @@ def synchronize_data(dataset):
     return featureslist;
 
 def build_features(featurelist):
+
     columns = ['PLMEAN','PLSTD','PLSKEW','PLMIN','PLMAX','PLMEDIAN','PLK',
                'PRMEAN','PRSTD','PRSKEW','PRMIN','PRMAX','PRMEDIAN','PRK',
                'AMEAN','ASTD','ASKEW','AMIN','AMAX','AMEDIAN','AK',
@@ -373,10 +374,60 @@ def select_features_with_rank(X,y,topN):
 
 
 
+def predictWithFeatureSelection(X,y,topN,size):
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=size, random_state=0);
+
+    clf = ExtraTreesClassifier(n_estimators=5000)
+    clf = clf.fit(X, y)
+
+    y_pred = clf.predict(X_test);
+    cnfMatrix = metrics.confusion_matrix(y_test, y_pred)
+    print(cnfMatrix)
+    report = metrics.classification_report(y_test, y_pred)
+    print(report)
+
+    print('Feature Importances')
+    print(clf.feature_importances_)
+    for feature in zip(X.columns, clf.feature_importances_):
+        print(feature)
+    feature_importance_normalized = np.std([tree.feature_importances_ for tree in
+                                            clf.estimators_],
+                                           axis=0)
+
+    XFeatures = list();
+
+
+    model = SelectFromModel(clf, prefit=True, threshold=-np.inf, max_features=topN)
+    X_train = model.transform(X_train)
+    X_test = model.transform(X_test);
+
+    print(model.get_support(indices=True))
+    for feature_list_index in model.get_support(indices=True):
+        XFeatures.append(X.columns[feature_list_index])
+
+    print('Selected Features')
+    print(XFeatures);
+
+
+    sc = StandardScaler();
+    X_train = sc.fit_transform(X_train)
+    X_test = sc.fit_transform(X_test)
+
+    logreg = LogisticRegression(multi_class='multinomial', solver='newton-cg', C=4);
+    logreg.fit(X_train, y_train)
+    y_pred = logreg.predict(X_test);
+    cnfMatrix = metrics.confusion_matrix(y_test, y_pred)
+    print(cnfMatrix)
+    report = metrics.classification_report(y_test, y_pred)
+    print(report)
+
+
+
 
 def predictWithFeatureSelectionSVM(X,y,topN,size,cvalue):
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=size, random_state=0, shuffle=True);
+   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=size, random_state=0, shuffle=True);
     clf = ExtraTreesClassifier(n_estimators=100)
     clf = clf.fit(X_train, y_train)
 
@@ -416,11 +467,9 @@ def predictWithFeatureSelectionSVM(X,y,topN,size,cvalue):
     report = metrics.classification_report(y_test, y_pred)
     print(report)
 
-
-
-
+    
 if __name__ == '__main__':
-    # load dataset
+     # load dataset
     print('Loading Datasets')
     dataset = load_dataset();
     print('Dataset loaded successfully')
@@ -450,10 +499,15 @@ if __name__ == '__main__':
     X = features.loc[:, features.columns != 'activity'];
 
     # Predict using Logistic Regression with test size 0.3
+    print('Logistic regression Prediction using various configuration')
+    predictWithFeatureSelection(X,y, 15, 0.2)
+    predictWithFeatureSelection(X,y, 15,  0.3)
+    predictWithFeatureSelection(X,y,  17,0.3)
+    predictWithFeatureSelection(X,y,  18, 0.2)
+
+    # Predict using Logistic Regression with test size 0.3
     print('SVM Prediction using test size 0.3 and regularization(C) value of 15')
     predictWithFeatureSelectionSVM(X, y, 15, 0.3, 15)
 
     print('SVM Prediction using test size 0.2 and regularization(C) value of 10^6')
     predictWithFeatureSelectionSVM(X, y, 15, 0.2, 10e6)
-
-
