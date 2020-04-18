@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.svm import SVC
 
 def load_dataset_acc(path, y):
     data = list();
@@ -20,7 +21,7 @@ def load_dataset_acc(path, y):
     for name in listdir(acc_directory):
         filename = acc_directory + '/' + name;
         df = pd.read_csv(filename, header=0, names=['time', 'AX', 'AY', 'AZ']);
-        df.dropna(axis=0, how='any', inplace=True)
+        df = df.fillna(0)
         df['time'] = pd.to_datetime(df['time'], unit='ms')
         df['activity'] = y
         data.append(df)
@@ -36,7 +37,7 @@ def load_dataset_gyro(path, y):
     for name in listdir(gyro_directory):
         filename = gyro_directory + '/' + name;
         df = pd.read_csv(filename, header=0, names=['time', 'GX', 'GY', 'GZ']);
-        df.dropna(axis=0, how='any', inplace=True)
+        df = df.fillna(0)
         df['time'] = pd.to_datetime(df['time'], unit='ms')
         df['activity'] = y
         data.append(df)
@@ -52,7 +53,7 @@ def load_dataset_pressure_right(path, y):
     for name in listdir(right_directory):
         filename = right_directory + '/' + name;
         df = pd.read_csv(filename, header=0, names=['time', 'PR1', 'PR2', 'PR3', 'PR4', 'PR5', 'PR6', 'PR7', 'PR8']);
-        df.dropna(axis=0, how='any', inplace=True)
+        df = df.fillna(0)
         df['time'] = pd.to_datetime(df['time'], unit='ms')
         df['activity'] = y
         data.append(df)
@@ -68,7 +69,7 @@ def load_dataset_pressure_left(path, y):
     for name in listdir(left_directory):
         filename = left_directory + '/' + name;
         df = pd.read_csv(filename, header=0, names=['time', 'PL1', 'PL2', 'PL3', 'PL4', 'PL5', 'PL6', 'PL7', 'PL8']);
-        df.dropna(axis=0, how='any', inplace=True)
+        df = df.fillna(0)
         df['time'] = pd.to_datetime(df['time'], unit='ms')
         df['activity'] = y
         data.append(df)
@@ -89,7 +90,7 @@ def plot_pressure_left(dataset):
     for i in range(len(dataset)):
         plt.subplot(start)
         data = dataset[i][:5000]
-        plt.title(data.activity[0])
+        plt.title(data.activity.iloc[0])
         data = data.set_index(['time'])
         plt.plot(data.index, data['PL1'], label='PL1')
         plt.plot(data.index, data['PL2'], label='PL2')
@@ -154,7 +155,7 @@ def plot_pressure_right(dataset):
     for i in range(len(dataset)):
         plt.subplot(start)
         data = dataset[i][:3000]
-        plt.title(data.activity[0])
+        plt.title(data.activity.iloc[0])
         data = data.set_index(['time'])
         plt.plot(data.index, data['PR1'], label='PR1')
         plt.plot(data.index, data['PR2'], label='PR2')
@@ -176,36 +177,71 @@ def plot_pressure_right(dataset):
 def load_dataset():
     dataset = list();
     dataset_pressureleft = list();
-    dataset_pressureleft.append(load_dataset_pressure_left('dataset/running/left', 'running'));
-    dataset_pressureleft.append(load_dataset_pressure_left('dataset/sitting/left', 'sitting'));
-    dataset_pressureleft.append(load_dataset_pressure_left('dataset/standing/left', 'standing'));
-    dataset_pressureleft.append(load_dataset_pressure_left('dataset/walking/left', 'walking'));
-    dataset_pressureleft.append(load_dataset_pressure_left('dataset/astair/left', 'ascendingstair'));
-    dataset_pressureleft.append(load_dataset_pressure_left('dataset/dstair/left', 'descendingstair'));
+    df = load_dataset_pressure_left('dataset/running/left', 'running');
+    df = df.dropna()
+    dataset_pressureleft.append(df);
+
+    df = load_dataset_pressure_left('dataset/sitting/left', 'sitting');
+    df = df.dropna();
+    dataset_pressureleft.append(df);
+
+    df = load_dataset_pressure_left('dataset/standing/left', 'standing');
+    df = df.replace(0, np.NaN).dropna();
+    dataset_pressureleft.append(df);
+
+    df = load_dataset_pressure_left('dataset/walking/left', 'walking');
+    df = df.dropna()
+    dataset_pressureleft.append(df);
+
+    df = load_dataset_pressure_left('dataset/astair/left', 'ascendingstair');
+    df = df.dropna()
+    dataset_pressureleft.append(df);
+
+    df = load_dataset_pressure_left('dataset/dstair/left', 'descendingstair');
+    df = df.dropna()
+    dataset_pressureleft.append(df);
+
 
     dataset_pressure_right = list();
-    dataset_pressure_right.append(load_dataset_pressure_right('dataset/running/right', 'running'));
-    dataset_pressure_right.append(load_dataset_pressure_right('dataset/sitting/right', 'sitting'));
-    dataset_pressure_right.append(load_dataset_pressure_right('dataset/standing/right', 'standing'));
-    dataset_pressure_right.append(load_dataset_pressure_right('dataset/walking/right', 'walking'));
-    dataset_pressure_right.append(load_dataset_pressure_right('dataset/astair/right', 'ascendingstair'));
-    dataset_pressure_right.append(load_dataset_pressure_right('dataset/dstair/right', 'descendingstair'));
+    df = load_dataset_pressure_right('dataset/running/right', 'running');
+    df = df.dropna()
+    dataset_pressure_right.append(df);
+
+    df = load_dataset_pressure_right('dataset/sitting/right', 'sitting');
+    df = df.dropna()
+    dataset_pressure_right.append(df);
+
+    df = load_dataset_pressure_right('dataset/standing/right', 'standing');
+    df = df.replace(0, np.NaN).dropna();
+    dataset_pressure_right.append(df);
+
+    df = load_dataset_pressure_right('dataset/walking/right', 'walking');
+    df = df.dropna()
+    dataset_pressure_right.append(df);
+
+    df = load_dataset_pressure_right('dataset/astair/right', 'ascendingstair');
+    df = df.dropna()
+    dataset_pressure_right.append(df);
+
+    df = load_dataset_pressure_right('dataset/dstair/right', 'descendingstair');
+    df = df.dropna()
+    dataset_pressure_right.append(df);
 
     dataset_acc = list();
-    dataset_acc.append(load_dataset_acc('dataset/running/acc', 'running'));
-    dataset_acc.append(load_dataset_acc('dataset/sitting/acc', 'sitting'));
-    dataset_acc.append(load_dataset_acc('dataset/standing/acc', 'standing'));
-    dataset_acc.append(load_dataset_acc('dataset/walking/acc', 'walking'));
-    dataset_acc.append(load_dataset_acc('dataset/astair/acc', 'ascendingstair'));
-    dataset_acc.append(load_dataset_acc('dataset/dstair/acc', 'descendingstair'));
+    dataset_acc.append(load_dataset_acc('dataset/running/acc', 'running').dropna());
+    dataset_acc.append(load_dataset_acc('dataset/sitting/acc', 'sitting').dropna());
+    dataset_acc.append(load_dataset_acc('dataset/standing/acc', 'standing').dropna());
+    dataset_acc.append(load_dataset_acc('dataset/walking/acc', 'walking').dropna());
+    dataset_acc.append(load_dataset_acc('dataset/astair/acc', 'ascendingstair').dropna());
+    dataset_acc.append(load_dataset_acc('dataset/dstair/acc', 'descendingstair').dropna());
 
     dataset_gyro = list();
-    dataset_gyro.append(load_dataset_gyro('dataset/running/gyro', 'running'));
-    dataset_gyro.append(load_dataset_gyro('dataset/sitting/gyro', 'sitting'));
-    dataset_gyro.append(load_dataset_gyro('dataset/standing/gyro', 'standing'));
-    dataset_gyro.append(load_dataset_gyro('dataset/walking/gyro', 'walking'));
-    dataset_gyro.append(load_dataset_gyro('dataset/astair/gyro', 'ascendingstair'));
-    dataset_gyro.append(load_dataset_gyro('dataset/dstair/gyro', 'descendingstair'));
+    dataset_gyro.append(load_dataset_gyro('dataset/running/gyro', 'running').dropna());
+    dataset_gyro.append(load_dataset_gyro('dataset/sitting/gyro', 'sitting').dropna());
+    dataset_gyro.append(load_dataset_gyro('dataset/standing/gyro', 'standing').dropna());
+    dataset_gyro.append(load_dataset_gyro('dataset/walking/gyro', 'walking').dropna());
+    dataset_gyro.append(load_dataset_gyro('dataset/astair/gyro', 'ascendingstair').dropna());
+    dataset_gyro.append(load_dataset_gyro('dataset/dstair/gyro', 'descendingstair').dropna());
 
     dataset.append(dataset_pressureleft);
     dataset.append(dataset_pressure_right);
@@ -224,7 +260,7 @@ def synchronize_data(dataset):
     featureslist = list();
     for i in range(len(dataset[0])):
         datalist = dataset[0][i]
-        activity = datalist['activity'][0]
+        activity = datalist['activity'].iloc[0]
         datalist = datalist.resample('1S', on='time').mean();
         datalist = datalist.reset_index();
         datalist['minsec'] = datalist['time'].dt.strftime('%M:%S');
@@ -239,7 +275,6 @@ def synchronize_data(dataset):
             datalist = pd.merge(left=datalist, right=temp, left_on='minsec', right_on='minsec');
 
         datalist['activity'] = activity
-        datalist = datalist.fillna(0);
         datalist['PL'] = datalist[['PL1', 'PL2', 'PL3', 'PL4', 'PL5', 'PL6', 'PL7', 'PL8']].replace(0, np.NaN).mean(
             axis=1, skipna=True);
         datalist['AR'] = np.sqrt(np.power(datalist['AX'],2) + np.power(datalist['AY'],2) + np.power(datalist['AZ'], 2));
@@ -251,10 +286,11 @@ def synchronize_data(dataset):
     return featureslist;
 
 def build_features(featurelist):
-    columns = ['PLMEAN','PLMEDIAN','PLSTD','PLVAR','PLSKEW',
-               'PRMEAN','PRMEDIAN','PRSTD','PRVAR','PRSKEW',
-               'AMEAN','AMEDIAN','ASTD','AVAR','ASKEW',
-               'GMEAN','GMEDIAN','GSTD','GVAR','GSKEW',
+
+    columns = ['PLMEAN','PLSTD','PLSKEW','PLMIN','PLMAX','PLMEDIAN','PLK',
+               'PRMEAN','PRSTD','PRSKEW','PRMIN','PRMAX','PRMEDIAN','PRK',
+               'AMEAN','ASTD','ASKEW','AMIN','AMAX','AMEDIAN','AK',
+               'GMEAN','GSTD','GSKEW','GMIN','GMAX','GMEDIAN','GK',
                'activity'];
     df = pd.DataFrame(columns=columns);
     datafinal = list();
@@ -265,34 +301,42 @@ def build_features(featurelist):
         mylist = list();
         for beg in range(0,data_length,2):
             mylist.append(list(itertools.chain.from_iterable(data.iloc[beg:(beg + 2 if beg + 2 < data_length else data_length)][['PL']].values)));
-            mylist.append(list(itertools.chain.from_iterable(data.iloc[beg:(beg + 3 if beg + 3 < data_length else data_length)][['PR']].values)));
-            mylist.append(list(itertools.chain.from_iterable(data.iloc[beg:(beg + 3 if beg + 3 < data_length else data_length)][['AR']].values)));
-            mylist.append(list(itertools.chain.from_iterable(data.iloc[beg:(beg + 3 if beg + 3 < data_length else data_length)][['GR']].values)));
+            mylist.append(list(itertools.chain.from_iterable(data.iloc[beg:(beg + 2 if beg + 2 < data_length else data_length)][['PR']].values)));
+            mylist.append(list(itertools.chain.from_iterable(data.iloc[beg:(beg + 2 if beg + 2 < data_length else data_length)][['AR']].values)));
+            mylist.append(list(itertools.chain.from_iterable(data.iloc[beg:(beg + 2 if beg + 2 < data_length else data_length)][['GR']].values)));
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 row_df = pd.DataFrame({
                 columns[0]: [np.nanmean(mylist[0])],
-                columns[1]: [np.nanmedian(mylist[0])],
-                columns[2]: [np.nanstd(mylist[0])],
-                columns[3]: [np.nanvar(mylist[0])],
-                columns[4]: [sp.stats.skew(mylist[0])],
-                columns[5]: [np.nanmean(mylist[1])],
-                columns[6]: [np.nanmedian(mylist[1])],
-                columns[7]: [np.nanstd(mylist[1])],
-                columns[8]: [np.nanvar(mylist[1])],
+                columns[1]: [np.nanstd(mylist[0])],
+                columns[2]: [sp.stats.skew(mylist[0])],
+                columns[3]: [np.nanmin(mylist[0])],
+                columns[4]: [np.nanmax(mylist[0])],
+                columns[5]: [np.nanmedian(mylist[0])],
+                columns[6]: [np.nanpercentile(mylist[0], 75)],
+                columns[7]: [np.nanmean(mylist[1])],
+                columns[8]: [np.nanstd(mylist[1])],
                 columns[9]: [sp.stats.skew(mylist[1])],
-                columns[10]: [np.nanmean(mylist[2])],
-                columns[11]: [np.nanmedian(mylist[2])],
-                columns[12]: [np.nanstd(mylist[2])],
-                columns[13]: [np.nanvar(mylist[2])],
-                columns[14]: [sp.stats.skew(mylist[2])],
-                columns[15]: [np.nanmean(mylist[3])],
-                columns[16]: [np.nanmedian(mylist[3])],
-                columns[17]: [np.nanstd(mylist[3])],
-                columns[18]: [np.nanvar(mylist[3])],
-                columns[19]: [sp.stats.skew(mylist[3])],
-                columns[20]: [activity]
+                columns[10]: [np.nanmin(mylist[1])],
+                columns[11]: [np.nanmax(mylist[1])],
+                columns[12]: [np.nanmedian(mylist[1])],
+                columns[13]: [np.nanpercentile(mylist[1],75)],
+                columns[14]: [np.nanmean(mylist[2])],
+                columns[15]: [np.nanstd(mylist[2])],
+                columns[16]: [sp.stats.skew(mylist[2])],
+                columns[17]: [np.nanmin(mylist[2])],
+                columns[18]: [np.nanmax(mylist[2])],
+                columns[19]: [np.nanmedian(mylist[2])],
+                columns[20]: [np.nanpercentile(mylist[2],75)],
+                columns[21]: [np.nanmean(mylist[3])],
+                columns[22]: [np.nanstd(mylist[3])],
+                columns[23]: [sp.stats.skew(mylist[3])],
+                columns[24]: [np.nanmin(mylist[3])],
+                columns[25]: [np.nanmax(mylist[3])],
+                columns[26]: [np.nanmedian(mylist[3])],
+                columns[27]: [np.nanpercentile(mylist[3],75)],
+                columns[28]: [activity]
                 })
             if not(row_df.empty):
                 df = df.append(row_df, ignore_index=True)
@@ -327,6 +371,7 @@ def select_features_with_rank(X,y,topN):
     # plt.xticks(rotation=90)
     # plt.show()
     return featList;
+
 
 
 def predictWithFeatureSelection(X,y,topN,size):
@@ -377,49 +422,92 @@ def predictWithFeatureSelection(X,y,topN,size):
     report = metrics.classification_report(y_test, y_pred)
     print(report)
 
+
+
+
+def predictWithFeatureSelectionSVM(X,y,topN,size,cvalue):
+
+   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=size, random_state=0, shuffle=True);
+    clf = ExtraTreesClassifier(n_estimators=100)
+    clf = clf.fit(X_train, y_train)
+
+    print('Feature Importances')
+    print(clf.feature_importances_)
+    for feature in zip(X.columns, clf.feature_importances_):
+        print(feature)
+    feature_importance_normalized = np.std([tree.feature_importances_ for tree in
+                                            clf.estimators_],
+                                           axis=0)
+
+    XFeatures = list();
+
+
+    model = SelectFromModel(clf, prefit=True, threshold=-np.inf, max_features=topN)
+    X_train = model.transform(X_train)
+    X_test = model.transform(X_test);
+
+    print(model.get_support(indices=True))
+    for feature_list_index in model.get_support(indices=True):
+        XFeatures.append(X.columns[feature_list_index])
+
+    print('Selected Features')
+    print(XFeatures);
+
+
+    sc = StandardScaler();
+    X_train = sc.fit_transform(X_train)
+    X_test = sc.fit_transform(X_test)
+
+    svclassifier = SVC(kernel="rbf", gamma=1/15, C=cvalue)
+    svclassifier.fit(X_train, y_train)
+
+    y_pred = svclassifier.predict(X_test);
+    cnfMatrix = metrics.confusion_matrix(y_test, y_pred)
+    print(cnfMatrix)
+    report = metrics.classification_report(y_test, y_pred)
+    print(report)
+
+    
 if __name__ == '__main__':
-    # load dataset
+     # load dataset
     print('Loading Datasets')
     dataset = load_dataset();
     print('Dataset loaded successfully')
     print('Loaded Dataset')
-    #print(dataset);
+    print(dataset);
 
     print('Plotting Datasets')
-    #plot_dataset(dataset);
+    plot_dataset(dataset);
     print('Plotting Completed')
 
     print('Synchronizing Dataset')
     datalist = synchronize_data(dataset)
     print('Synchronization complete')
     print('Printing Synchronized dataset')
-    #print(datalist);
+    print(datalist);
 
     print('Building Features')
     features = build_features(datalist)
     print('Features built')
     print('Showing Build Features')
     print(features)
+    print('First 10 Head of Features')
+    print(features.sample(frac=1).head(10))
     features.to_csv(r'dataset/features.csv', index=False)
 
     y = features['activity'];
     X = features.loc[:, features.columns != 'activity'];
-    #predictWithoutFeatureSelection(X,y)
-    #print('Prediction accuracy using all features', pred1)
-    predictWithFeatureSelection(X,y, 0.2, 15)
-    predictWithFeatureSelection(X,y, 0.3, 15)
-    predictWithFeatureSelection(X,y, 0.3, 17)
-    predictWithFeatureSelection(X,y, 0.2, 18)
-    
-    #print('Prediction accuracy using selected features', pred2)
 
+    # Predict using Logistic Regression with test size 0.3
+    print('Logistic regression Prediction using various configuration')
+    predictWithFeatureSelection(X,y, 15, 0.2)
+    predictWithFeatureSelection(X,y, 15,  0.3)
+    predictWithFeatureSelection(X,y,  17,0.3)
+    predictWithFeatureSelection(X,y,  18, 0.2)
 
-    print('selecting relevant features based on rank and importance.')
-    print('Note: relevant features are created based on summary of built features')
-    #selected_features = select_features_with_rank(X_train,y_train,15);
+    # Predict using Logistic Regression with test size 0.3
+    print('SVM Prediction using test size 0.3 and regularization(C) value of 15')
+    predictWithFeatureSelectionSVM(X, y, 15, 0.3, 15)
 
-    
-
-
-    #print(selected_features[0])
-
+    print('SVM Prediction using test size 0.2 and regularization(C) value of 10^6')
+    predictWithFeatureSelectionSVM(X, y, 15, 0.2, 10e6)
