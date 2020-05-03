@@ -9,6 +9,10 @@ Project Phase II Description:
 
 In this project phase, we developed and applied two classification models on our preprocessed data from the project phase 1. We first developed one-vs-all logistic regression with regularization model to classify the different activities in our preprocessed data. Furthermore, we developed a multiclass version of support vector machine model using Gaussian kernel to classify the different activities in our preprocessed data. We also performed some accuracy analysis to determine the precision, recall and accuracy of each of the model.
 
+Project Phase III Description:
+
+In this project phase, we developed neural network classification model on our preprocessed data from the project phase 1. We attempted two different approaches in developing the neural network classification model. The first approach involved having a constant learning rate throughout the development of the model. On the other hand, the second approach involved developing the model with a changing learning rate. We also performed some accuracy analysis to determine the precision, recall and accuracy of the two approaches. Furthermore, we revisited our data preprocessing step, logistic regression model and support vector machine model to investigate and correct the logical error that caused the two models to overfit on the testing set.
+
 
 Prerequisites:
 
